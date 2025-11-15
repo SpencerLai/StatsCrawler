@@ -25,6 +25,12 @@ Documentation of all interactions and setup steps:
    - Chrome browser automation for gamecenter
    - Architecture and data flow design
 
+4. **04-git-setup.md** - Git repository setup
+   - Local git initialization
+   - Initial commit with all project files
+   - GitHub remote configuration
+   - Instructions for creating GitHub repository
+
 ### Planning Documents
 
 - **PROJECT_PLAN.md** - Comprehensive project roadmap
