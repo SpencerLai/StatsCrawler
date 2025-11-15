@@ -229,19 +229,36 @@ If adding collaborators:
 2. Add team members by GitHub username
 3. Set appropriate permissions (Read, Write, or Admin)
 
+## Troubleshooting (Post-Setup)
+
+### Issue: Authentication Error with HTTPS
+**Problem**: `fatal: could not read Username for 'https://github.com'`
+
+**Solution**: Switch from HTTPS to SSH
+```bash
+git remote set-url origin git@github.com:SpencerLai/StatsCrawler.git
+```
+
+### Issue: Host Key Verification Failed
+**Problem**: `Host key verification failed` when using SSH
+
+**Solution**: Add GitHub to SSH known hosts
+```bash
+ssh-keyscan github.com >> ~/.ssh/known_hosts
+```
+
 ## Outcome
 
 ✅ Local Git repository initialized
-✅ All project files committed (19 files, 1,419 lines)
+✅ All project files committed (22 files total)
 ✅ Main branch configured
-✅ Remote origin configured for GitHub
-⏳ Awaiting GitHub repository creation and initial push
+✅ Remote origin configured for GitHub (SSH)
+✅ GitHub repository created
+✅ **Successfully pushed to GitHub!**
 
-## Next Action Required
-
-**User must create the GitHub repository and push:**
-```bash
-# After creating repo on GitHub:
-git push -u origin main
-```
+### Final Status
+- **Repository URL**: https://github.com/SpencerLai/StatsCrawler
+- **Commits Pushed**: 3 commits
+- **Branch**: main (tracking origin/main)
+- **Authentication**: SSH via GitHub CLI
 

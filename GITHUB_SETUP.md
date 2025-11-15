@@ -44,9 +44,14 @@ gh repo create SpencerLai/StatsCrawler --public --source=. --remote=origin --pus
 ## Current Status
 
 ✅ Git initialized
-✅ Files committed (2 commits, 21 files)
-✅ Remote configured: `https://github.com/SpencerLai/StatsCrawler.git`
-⏳ **Waiting for you to create the GitHub repository**
+✅ Files committed (3 commits, 22 files)
+✅ Remote configured: `git@github.com:SpencerLai/StatsCrawler.git` (SSH)
+✅ GitHub repository created
+✅ **Code successfully pushed to GitHub!**
+
+## View Your Repository
+
+**https://github.com/SpencerLai/StatsCrawler**
 
 ---
 
