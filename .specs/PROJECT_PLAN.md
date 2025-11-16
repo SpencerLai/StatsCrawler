@@ -119,9 +119,12 @@ StatsCrawler/
 - [x] Define specific application requirements (NHL stats crawling)
 - [x] Identify data sources (NHL.com, NHL Gamecenter)
 - [x] Database selection (PostgreSQL)
-- [ ] Design database schema for games and statistics
-- [ ] Set up PostgreSQL connection
-- [ ] Choose and configure ORM/database client
+- [x] Design database schema for games and statistics
+- [x] Design event-driven architecture for data capture
+- [x] Plan data lake streaming pipeline
+- [ ] Install PostgreSQL and create database
+- [ ] Run schema migrations
+- [ ] Set up Prisma ORM for TypeScript types
 - [ ] Design crawler architecture
 - [ ] Select browser automation library (Puppeteer vs Playwright)
 - [ ] Design API endpoints structure

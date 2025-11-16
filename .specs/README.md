@@ -31,6 +31,13 @@ Documentation of all interactions and setup steps:
    - GitHub remote configuration
    - Instructions for creating GitHub repository
 
+5. **05-database-schema-design.md** - Database schema design deep dive
+   - Event-driven architecture
+   - PostgreSQL schema for event logging
+   - Crawler traceability system
+   - Data lake streaming pipeline
+   - Analytics-ready materialized views
+
 ### Planning Documents
 
 - **PROJECT_PLAN.md** - Comprehensive project roadmap
