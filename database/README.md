@@ -129,7 +129,7 @@ Every event traces back to:
 
 ### Events by Game
 ```sql
-SELECT 
+SELECT
 	event_type,
 	COUNT(*) as count,
 	MIN(event_timestamp) as first_event,
@@ -142,7 +142,7 @@ ORDER BY count DESC;
 
 ### Player Event Summary
 ```sql
-SELECT 
+SELECT
 	p.full_name,
 	e.event_type,
 	COUNT(*) as total
@@ -155,7 +155,7 @@ ORDER BY total DESC;
 
 ### Crawler Performance
 ```sql
-SELECT 
+SELECT
 	crawler_instance_id,
 	COUNT(*) as runs,
 	AVG(duration_seconds) as avg_duration,
@@ -193,7 +193,7 @@ CREATE TABLE events_2025_04 PARTITION OF events
 
 ### Check Partition Sizes
 ```sql
-SELECT 
+SELECT
 	schemaname,
 	tablename,
 	pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size
@@ -273,7 +273,7 @@ WHERE datname = 'statscrawler';
 
 ### Table Sizes
 ```sql
-SELECT 
+SELECT
 	schemaname,
 	tablename,
 	pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS total_size
@@ -284,7 +284,7 @@ ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 
 ### Index Usage
 ```sql
-SELECT 
+SELECT
 	schemaname,
 	tablename,
 	indexname,

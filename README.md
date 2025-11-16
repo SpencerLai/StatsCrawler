@@ -44,11 +44,32 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
   - `page.tsx` - Home page
   - `globals.css` - Global styles
 - `coding-standards/` - Coding style documentation and guidelines
+- `database/` - PostgreSQL schema and migrations
+  - `schema.sql` - Complete database schema
+  - `example_queries.sql` - Common query patterns
+  - `migrations/` - Database migrations
 - `next.config.js` - Next.js configuration
 - `tsconfig.json` - TypeScript configuration
 - `.eslintrc.json` - ESLint configuration
 - `.prettierrc` - Prettier configuration
 - `.editorconfig` - Editor configuration
+
+## Database Schema
+
+Event-driven PostgreSQL schema designed for:
+- ⚡ Real-time event capture with time-series partitioning
+- 🔍 Complete crawler traceability
+- 📊 Analytics-ready materialized views
+- 🌊 Data lake streaming pipeline
+
+Key tables:
+- **events** - Fact table for all captured events (partitioned by time)
+- **games** - Game metadata and status
+- **players** / **teams** - Reference dimensions
+- **crawler_runs** - Crawler execution tracking
+- **event_stream_queue** - Data lake streaming
+
+See `database/` folder for schema, migrations, and example queries.
 
 ## Coding Standards
 

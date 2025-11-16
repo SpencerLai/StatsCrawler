@@ -6,7 +6,7 @@
 -- ============================================================================
 
 -- 1. Get all events for a specific game
-SELECT 
+SELECT
 	e.event_id,
 	e.event_type,
 	e.event_timestamp,
@@ -24,7 +24,7 @@ WHERE e.game_id = 1
 ORDER BY e.event_timestamp;
 
 -- 2. Game event summary by type
-SELECT 
+SELECT
 	event_type,
 	COUNT(*) AS count,
 	MIN(event_timestamp) AS first_event,
@@ -36,7 +36,7 @@ GROUP BY event_type
 ORDER BY count DESC;
 
 -- 3. Goals with scorers and time
-SELECT 
+SELECT
 	e.event_timestamp,
 	e.game_time,
 	e.period,
@@ -52,7 +52,7 @@ WHERE e.game_id = 1 AND e.event_type = 'goal'
 ORDER BY e.event_timestamp;
 
 -- 4. Shot map data (x, y coordinates)
-SELECT 
+SELECT
 	event_id,
 	event_type,
 	event_subtype,
@@ -62,9 +62,9 @@ SELECT
 	CASE WHEN event_type = 'goal' THEN true ELSE false END AS is_goal
 FROM events e
 LEFT JOIN players p ON e.player_id = p.player_id
-WHERE game_id = 1 
+WHERE game_id = 1
 	AND event_type IN ('shot', 'goal', 'missed_shot')
-	AND x_coord IS NOT NULL 
+	AND x_coord IS NOT NULL
 	AND y_coord IS NOT NULL;
 
 -- ============================================================================
@@ -72,7 +72,7 @@ WHERE game_id = 1
 -- ============================================================================
 
 -- 5. Player performance in a game
-SELECT 
+SELECT
 	p.full_name,
 	p.position,
 	COUNT(*) AS total_events,
@@ -87,7 +87,7 @@ GROUP BY p.player_id, p.full_name, p.position
 ORDER BY goals DESC, shots DESC;
 
 -- 6. Player events across all games
-SELECT 
+SELECT
 	p.full_name,
 	p.position,
 	t.team_name,
@@ -104,12 +104,12 @@ ORDER BY total_goals DESC
 LIMIT 20;
 
 -- 7. Player shooting percentage
-SELECT 
+SELECT
 	p.full_name,
 	COUNT(CASE WHEN e.event_type = 'goal' THEN 1 END) AS goals,
 	COUNT(CASE WHEN e.event_type IN ('shot', 'goal') THEN 1 END) AS shots,
 	ROUND(
-		100.0 * COUNT(CASE WHEN e.event_type = 'goal' THEN 1 END) / 
+		100.0 * COUNT(CASE WHEN e.event_type = 'goal' THEN 1 END) /
 		NULLIF(COUNT(CASE WHEN e.event_type IN ('shot', 'goal') THEN 1 END), 0),
 		2
 	) AS shooting_pct
@@ -125,7 +125,7 @@ LIMIT 20;
 -- ============================================================================
 
 -- 8. Team performance summary
-SELECT 
+SELECT
 	t.team_name,
 	COUNT(DISTINCT e.game_id) AS games,
 	COUNT(*) AS total_events,
@@ -138,7 +138,7 @@ GROUP BY t.team_id, t.team_name
 ORDER BY goals DESC;
 
 -- 9. Team goals by period
-SELECT 
+SELECT
 	t.team_name,
 	e.period,
 	COUNT(*) AS goals_in_period
@@ -153,7 +153,7 @@ ORDER BY t.team_name, e.period;
 -- ============================================================================
 
 -- 10. Events over time (hourly buckets)
-SELECT 
+SELECT
 	DATE_TRUNC('hour', event_timestamp) AS hour,
 	COUNT(*) AS events_count,
 	COUNT(DISTINCT game_id) AS active_games
@@ -163,7 +163,7 @@ GROUP BY DATE_TRUNC('hour', event_timestamp)
 ORDER BY hour DESC;
 
 -- 11. Goals by time in period
-SELECT 
+SELECT
 	SUBSTRING(game_time FROM 1 FOR 2) AS minute,
 	period,
 	COUNT(*) AS goals
@@ -177,7 +177,7 @@ ORDER BY period, minute;
 -- ============================================================================
 
 -- 12. Crawler performance summary
-SELECT 
+SELECT
 	crawler_instance_id,
 	crawler_version,
 	COUNT(*) AS total_runs,
@@ -191,7 +191,7 @@ GROUP BY crawler_instance_id, crawler_version
 ORDER BY last_run DESC;
 
 -- 13. Recent crawler runs
-SELECT 
+SELECT
 	cr.run_id,
 	cr.crawler_instance_id,
 	g.nhl_game_id,
@@ -206,7 +206,7 @@ ORDER BY cr.started_at DESC
 LIMIT 20;
 
 -- 14. Failed crawler runs
-SELECT 
+SELECT
 	run_id,
 	game_id,
 	started_at,
@@ -218,7 +218,7 @@ ORDER BY started_at DESC
 LIMIT 10;
 
 -- 15. Crawler capture latency
-SELECT 
+SELECT
 	AVG(EXTRACT(EPOCH FROM (e.captured_at - e.event_timestamp))) AS avg_latency_seconds,
 	MIN(EXTRACT(EPOCH FROM (e.captured_at - e.event_timestamp))) AS min_latency,
 	MAX(EXTRACT(EPOCH FROM (e.captured_at - e.event_timestamp))) AS max_latency,
@@ -231,7 +231,7 @@ WHERE e.captured_at > NOW() - INTERVAL '24 hours';
 -- ============================================================================
 
 -- 16. Events pending streaming
-SELECT 
+SELECT
 	COUNT(*) AS pending_count,
 	MIN(queued_at) AS oldest_queued,
 	MAX(queued_at) AS newest_queued
@@ -239,7 +239,7 @@ FROM event_stream_queue
 WHERE stream_status = 'PENDING';
 
 -- 17. Streaming queue status
-SELECT 
+SELECT
 	stream_status,
 	COUNT(*) AS count,
 	MIN(queued_at) AS oldest,
@@ -249,7 +249,7 @@ GROUP BY stream_status
 ORDER BY count DESC;
 
 -- 18. Failed streaming attempts
-SELECT 
+SELECT
 	esq.queue_id,
 	esq.event_id,
 	esq.queued_at,
@@ -261,12 +261,12 @@ ORDER BY queued_at DESC
 LIMIT 20;
 
 -- 19. Mark events as processed (simulation)
--- UPDATE events 
+-- UPDATE events
 -- SET is_processed = TRUE, processed_at = NOW()
 -- WHERE event_id IN (
--- 	SELECT event_id 
--- 	FROM events 
--- 	WHERE is_processed = FALSE 
+-- 	SELECT event_id
+-- 	FROM events
+-- 	WHERE is_processed = FALSE
 -- 	LIMIT 1000
 -- );
 
@@ -275,7 +275,7 @@ LIMIT 20;
 -- ============================================================================
 
 -- 20. Database size by table
-SELECT 
+SELECT
 	schemaname,
 	tablename,
 	pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS total_size,
@@ -286,7 +286,7 @@ WHERE schemaname = 'public'
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 
 -- 21. Event counts by partition
-SELECT 
+SELECT
 	schemaname,
 	tablename,
 	n_live_tup AS row_count,
@@ -296,7 +296,7 @@ WHERE tablename LIKE 'events_%'
 ORDER BY n_live_tup DESC;
 
 -- 22. Index usage statistics
-SELECT 
+SELECT
 	schemaname,
 	tablename,
 	indexname,
@@ -309,7 +309,7 @@ WHERE schemaname = 'public'
 ORDER BY idx_scan ASC;
 
 -- 23. Most active tables
-SELECT 
+SELECT
 	schemaname,
 	tablename,
 	seq_scan,
@@ -328,16 +328,16 @@ ORDER BY (n_tup_ins + n_tup_upd + n_tup_del) DESC;
 -- ============================================================================
 
 -- 24. Events with missing player references
-SELECT 
+SELECT
 	event_type,
 	COUNT(*) AS count_without_player
 FROM events
-WHERE player_id IS NULL 
+WHERE player_id IS NULL
 	AND event_type IN ('goal', 'shot', 'penalty')  -- Events that should have players
 GROUP BY event_type;
 
 -- 25. Games with event counts
-SELECT 
+SELECT
 	g.game_id,
 	g.nhl_game_id,
 	g.game_date,
@@ -351,7 +351,7 @@ GROUP BY g.game_id, g.nhl_game_id, g.game_date, g.game_status
 ORDER BY g.game_date DESC;
 
 -- 26. Duplicate event detection
-SELECT 
+SELECT
 	game_id,
 	event_type,
 	event_timestamp,

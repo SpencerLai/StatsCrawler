@@ -292,7 +292,7 @@ CREATE TRIGGER trigger_update_crawler_stats
 
 -- Game Summaries
 CREATE MATERIALIZED VIEW game_summaries AS
-SELECT 
+SELECT
 	g.game_id,
 	g.nhl_game_id,
 	g.game_date,
@@ -310,7 +310,7 @@ FROM games g
 LEFT JOIN teams ht ON g.home_team_id = ht.team_id
 LEFT JOIN teams at ON g.away_team_id = at.team_id
 LEFT JOIN events e ON g.game_id = e.game_id
-GROUP BY g.game_id, g.nhl_game_id, g.game_date, g.game_status, 
+GROUP BY g.game_id, g.nhl_game_id, g.game_date, g.game_status,
          ht.team_name, at.team_name, g.home_score, g.away_score;
 
 CREATE UNIQUE INDEX idx_game_summaries_game_id ON game_summaries(game_id);
@@ -321,7 +321,7 @@ CREATE UNIQUE INDEX idx_game_summaries_game_id ON game_summaries(game_id);
 
 -- Events for Export (Data Lake)
 CREATE VIEW events_for_export AS
-SELECT 
+SELECT
 	e.event_id,
 	e.event_type,
 	e.event_subtype,

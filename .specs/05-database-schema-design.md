@@ -43,41 +43,41 @@ The central table that logs every event captured from NHL pages.
 ```sql
 CREATE TABLE events (
 	event_id BIGSERIAL PRIMARY KEY,
-	
+
 	-- Event Classification
 	event_type VARCHAR(50) NOT NULL,  -- 'goal', 'penalty', 'shot', 'faceoff', 'hit', etc.
 	event_subtype VARCHAR(50),        -- Specific details like 'power_play_goal', 'wrist_shot'
-	
+
 	-- Temporal Data
 	event_timestamp TIMESTAMPTZ NOT NULL,     -- When event occurred in game
 	captured_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),  -- When crawler captured it
 	game_time VARCHAR(20),                    -- Game clock time (e.g., "12:34" in period)
 	period INTEGER,                           -- Period number (1, 2, 3, OT, SO)
 	period_type VARCHAR(20),                  -- 'REGULAR', 'OVERTIME', 'SHOOTOUT'
-	
+
 	-- References
 	game_id BIGINT NOT NULL REFERENCES games(game_id),
 	crawler_run_id BIGINT NOT NULL REFERENCES crawler_runs(run_id),
 	team_id INTEGER REFERENCES teams(team_id),           -- Team involved (if applicable)
 	player_id INTEGER REFERENCES players(player_id),     -- Primary player
 	secondary_player_id INTEGER REFERENCES players(player_id),  -- Secondary player (assists, penalties drawn)
-	
+
 	-- Event Details (JSONB for flexibility)
 	event_data JSONB NOT NULL,  -- Complete event payload from NHL
-	
+
 	-- Coordinates (for spatial analysis)
 	x_coord DECIMAL(5,2),  -- X coordinate on ice
 	y_coord DECIMAL(5,2),  -- Y coordinate on ice
-	
+
 	-- Scores at time of event
 	home_score INTEGER,
 	away_score INTEGER,
-	
+
 	-- Metadata
 	source_url TEXT,            -- URL where event was captured
 	is_processed BOOLEAN DEFAULT FALSE,  -- For streaming pipeline
 	processed_at TIMESTAMPTZ,
-	
+
 	-- Indexing for time-series queries
 	CONSTRAINT events_time_idx CHECK (event_timestamp IS NOT NULL)
 );
@@ -103,39 +103,39 @@ Stores game-level information.
 ```sql
 CREATE TABLE games (
 	game_id BIGSERIAL PRIMARY KEY,
-	
+
 	-- NHL Identifiers
 	nhl_game_id VARCHAR(50) UNIQUE NOT NULL,  -- Official NHL game ID
 	season VARCHAR(10) NOT NULL,               -- e.g., '2024-25'
 	game_type VARCHAR(20),                     -- 'REGULAR', 'PLAYOFF', 'PRESEASON'
-	
+
 	-- Teams
 	home_team_id INTEGER NOT NULL REFERENCES teams(team_id),
 	away_team_id INTEGER NOT NULL REFERENCES teams(team_id),
-	
+
 	-- Timing
 	game_date DATE NOT NULL,
 	game_datetime TIMESTAMPTZ,
 	venue_id INTEGER REFERENCES venues(venue_id),
-	
+
 	-- Status
 	game_status VARCHAR(20) NOT NULL,  -- 'SCHEDULED', 'LIVE', 'FINAL', 'POSTPONED'
 	current_period INTEGER,
 	current_period_time VARCHAR(20),
-	
+
 	-- Scores
 	home_score INTEGER DEFAULT 0,
 	away_score INTEGER DEFAULT 0,
-	
+
 	-- URLs
 	gamecenter_url TEXT,
-	
+
 	-- Metadata
 	created_at TIMESTAMPTZ DEFAULT NOW(),
 	updated_at TIMESTAMPTZ DEFAULT NOW(),
 	first_crawled_at TIMESTAMPTZ,
 	last_crawled_at TIMESTAMPTZ,
-	
+
 	-- Additional game data
 	game_data JSONB
 );
@@ -152,33 +152,33 @@ Tracks each crawler execution for traceability.
 ```sql
 CREATE TABLE crawler_runs (
 	run_id BIGSERIAL PRIMARY KEY,
-	
+
 	-- Crawler Identification
 	crawler_instance_id VARCHAR(100),  -- Unique ID for crawler instance
 	crawler_version VARCHAR(20),        -- Software version
-	
+
 	-- Timing
 	started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 	completed_at TIMESTAMPTZ,
 	duration_seconds INTEGER,
-	
+
 	-- Target
 	game_id BIGINT REFERENCES games(game_id),
 	target_url TEXT NOT NULL,
-	
+
 	-- Status
 	status VARCHAR(20) NOT NULL,  -- 'RUNNING', 'SUCCESS', 'FAILED', 'PARTIAL'
 	error_message TEXT,
-	
+
 	-- Statistics
 	events_captured INTEGER DEFAULT 0,
 	pages_visited INTEGER DEFAULT 0,
-	
+
 	-- Browser Info
 	browser_type VARCHAR(50),     -- 'chrome', 'chromium'
 	browser_version VARCHAR(50),
 	user_agent TEXT,
-	
+
 	-- Metadata
 	run_metadata JSONB
 );
@@ -194,30 +194,30 @@ NHL teams reference data.
 ```sql
 CREATE TABLE teams (
 	team_id SERIAL PRIMARY KEY,
-	
+
 	-- NHL Identifiers
 	nhl_team_id INTEGER UNIQUE NOT NULL,
 	team_code VARCHAR(10) UNIQUE NOT NULL,  -- 'TOR', 'MTL', 'BOS', etc.
-	
+
 	-- Team Info
 	team_name VARCHAR(100) NOT NULL,
 	team_full_name VARCHAR(100),
 	city VARCHAR(100),
 	abbreviation VARCHAR(5),
-	
+
 	-- Division/Conference
 	division VARCHAR(50),
 	conference VARCHAR(50),
-	
+
 	-- Metadata
 	logo_url TEXT,
 	primary_color VARCHAR(7),   -- Hex color
 	secondary_color VARCHAR(7),
-	
+
 	active BOOLEAN DEFAULT TRUE,
 	created_at TIMESTAMPTZ DEFAULT NOW(),
 	updated_at TIMESTAMPTZ DEFAULT NOW(),
-	
+
 	team_data JSONB
 );
 
@@ -231,39 +231,39 @@ NHL players reference data.
 ```sql
 CREATE TABLE players (
 	player_id SERIAL PRIMARY KEY,
-	
+
 	-- NHL Identifiers
 	nhl_player_id INTEGER UNIQUE NOT NULL,
-	
+
 	-- Personal Info
 	first_name VARCHAR(100),
 	last_name VARCHAR(100) NOT NULL,
 	full_name VARCHAR(200),
 	jersey_number INTEGER,
-	
+
 	-- Current Team
 	current_team_id INTEGER REFERENCES teams(team_id),
-	
+
 	-- Player Details
 	position VARCHAR(10),  -- 'C', 'LW', 'RW', 'D', 'G'
 	shoots VARCHAR(1),     -- 'L', 'R'
 	catches VARCHAR(1),    -- 'L', 'R' (for goalies)
-	
+
 	-- Physical
 	height_inches INTEGER,
 	weight_pounds INTEGER,
 	birth_date DATE,
 	birth_city VARCHAR(100),
 	birth_country VARCHAR(100),
-	
+
 	-- Status
 	active BOOLEAN DEFAULT TRUE,
-	
+
 	-- Metadata
 	headshot_url TEXT,
 	created_at TIMESTAMPTZ DEFAULT NOW(),
 	updated_at TIMESTAMPTZ DEFAULT NOW(),
-	
+
 	player_data JSONB
 );
 
@@ -279,16 +279,16 @@ Arena/venue information.
 ```sql
 CREATE TABLE venues (
 	venue_id SERIAL PRIMARY KEY,
-	
+
 	nhl_venue_id INTEGER UNIQUE,
 	venue_name VARCHAR(200) NOT NULL,
 	city VARCHAR(100),
 	state_province VARCHAR(100),
 	country VARCHAR(100),
-	
+
 	timezone VARCHAR(50),
 	capacity INTEGER,
-	
+
 	created_at TIMESTAMPTZ DEFAULT NOW(),
 	venue_data JSONB
 );
@@ -300,17 +300,17 @@ Standardized event types for analytics.
 ```sql
 CREATE TABLE event_types (
 	event_type_id SERIAL PRIMARY KEY,
-	
+
 	event_type VARCHAR(50) UNIQUE NOT NULL,
 	event_category VARCHAR(50),  -- 'SCORING', 'PENALTY', 'PLAY', 'STOPPAGE'
 	display_name VARCHAR(100),
 	description TEXT,
-	
+
 	-- Analytics flags
 	is_scoring_play BOOLEAN DEFAULT FALSE,
 	is_penalty BOOLEAN DEFAULT FALSE,
 	affects_game_state BOOLEAN DEFAULT TRUE,
-	
+
 	created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -334,7 +334,7 @@ INSERT INTO event_types (event_type, event_category, display_name, is_scoring_pl
 
 ```sql
 CREATE MATERIALIZED VIEW game_summaries AS
-SELECT 
+SELECT
 	g.game_id,
 	g.nhl_game_id,
 	g.game_date,
@@ -352,7 +352,7 @@ FROM games g
 LEFT JOIN teams ht ON g.home_team_id = ht.team_id
 LEFT JOIN teams at ON g.away_team_id = at.team_id
 LEFT JOIN events e ON g.game_id = e.game_id
-GROUP BY g.game_id, g.nhl_game_id, g.game_date, g.game_status, 
+GROUP BY g.game_id, g.nhl_game_id, g.game_date, g.game_status,
          ht.team_name, at.team_name, g.home_score, g.away_score;
 
 CREATE UNIQUE INDEX idx_game_summaries_game_id ON game_summaries(game_id);
@@ -362,7 +362,7 @@ CREATE UNIQUE INDEX idx_game_summaries_game_id ON game_summaries(game_id);
 
 ```sql
 CREATE MATERIALIZED VIEW player_event_summaries AS
-SELECT 
+SELECT
 	p.player_id,
 	p.full_name,
 	p.position,
@@ -375,7 +375,7 @@ SELECT
 FROM events e
 JOIN players p ON e.player_id = p.player_id
 LEFT JOIN teams t ON p.current_team_id = t.team_id
-GROUP BY p.player_id, p.full_name, p.position, t.team_name, 
+GROUP BY p.player_id, p.full_name, p.position, t.team_name,
          e.event_type, DATE(e.event_timestamp);
 
 CREATE INDEX idx_player_summaries_player ON player_event_summaries(player_id, event_date);
@@ -386,7 +386,7 @@ CREATE INDEX idx_player_summaries_type ON player_event_summaries(event_type);
 
 ```sql
 CREATE MATERIALIZED VIEW team_event_summaries AS
-SELECT 
+SELECT
 	t.team_id,
 	t.team_name,
 	e.event_type,
@@ -445,7 +445,7 @@ For periodic batch exports to data lake.
 
 ```sql
 CREATE VIEW events_for_export AS
-SELECT 
+SELECT
 	e.event_id,
 	e.event_type,
 	e.event_subtype,
@@ -453,41 +453,41 @@ SELECT
 	e.captured_at,
 	e.game_time,
 	e.period,
-	
+
 	-- Game info
 	g.nhl_game_id,
 	g.season,
 	g.game_date,
-	
+
 	-- Team info
 	t.team_code,
 	t.team_name,
-	
+
 	-- Player info
 	p.nhl_player_id,
 	p.full_name AS player_name,
 	p.position,
-	
+
 	-- Secondary player
 	p2.nhl_player_id AS secondary_player_nhl_id,
 	p2.full_name AS secondary_player_name,
-	
+
 	-- Crawler info
 	cr.crawler_instance_id,
 	cr.crawler_version,
 	cr.started_at AS crawler_run_started,
-	
+
 	-- Event details
 	e.event_data,
 	e.x_coord,
 	e.y_coord,
 	e.home_score,
 	e.away_score,
-	
+
 	-- Processing status
 	e.is_processed,
 	e.processed_at
-	
+
 FROM events e
 JOIN games g ON e.game_id = g.game_id
 JOIN crawler_runs cr ON e.crawler_run_id = cr.run_id
@@ -592,7 +592,7 @@ BEGIN
 	)
 	INSERT INTO events_archive
 	SELECT * FROM moved_events;
-	
+
 	GET DIAGNOSTICS archived_count = ROW_COUNT;
 	RETURN archived_count;
 END;
