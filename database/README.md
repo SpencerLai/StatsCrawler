@@ -101,7 +101,22 @@ DATABASE_URL="postgresql://localhost:5432/statscrawler"
 
 ## Key Features
 
-### 1. Time-Series Partitioning
+### 1. UUID External References
+Every entity has a UUID field for unique external identification:
+- Auto-generated using `uuid_generate_v4()`
+- Unique index on every table
+- Used for API endpoints, data lake references, cross-system linking
+- Internal operations use integer PKs for performance
+
+```sql
+-- Lookup by UUID
+SELECT * FROM games WHERE uuid = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+
+-- API response includes UUID for client reference
+SELECT uuid, game_date, home_score, away_score FROM games WHERE game_id = 1;
+```
+
+### 2. Time-Series Partitioning
 Events table is partitioned by month for:
 - Fast queries on recent data
 - Easy archival of old data

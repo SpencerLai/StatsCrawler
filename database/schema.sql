@@ -16,6 +16,7 @@ CREATE EXTENSION IF NOT EXISTS "pg_trgm";  -- For text search
 -- Teams
 CREATE TABLE teams (
 	team_id SERIAL PRIMARY KEY,
+	uuid UUID NOT NULL DEFAULT uuid_generate_v4(),
 	nhl_team_id INTEGER UNIQUE NOT NULL,
 	team_code VARCHAR(10) UNIQUE NOT NULL,
 	team_name VARCHAR(100) NOT NULL,
@@ -33,6 +34,7 @@ CREATE TABLE teams (
 	team_data JSONB
 );
 
+CREATE UNIQUE INDEX idx_teams_uuid ON teams(uuid);
 CREATE INDEX idx_teams_code ON teams(team_code);
 CREATE INDEX idx_teams_nhl_id ON teams(nhl_team_id);
 CREATE INDEX idx_teams_active ON teams(active) WHERE active = TRUE;
@@ -40,6 +42,7 @@ CREATE INDEX idx_teams_active ON teams(active) WHERE active = TRUE;
 -- Venues
 CREATE TABLE venues (
 	venue_id SERIAL PRIMARY KEY,
+	uuid UUID NOT NULL DEFAULT uuid_generate_v4(),
 	nhl_venue_id INTEGER UNIQUE,
 	venue_name VARCHAR(200) NOT NULL,
 	city VARCHAR(100),
@@ -51,9 +54,12 @@ CREATE TABLE venues (
 	venue_data JSONB
 );
 
+CREATE UNIQUE INDEX idx_venues_uuid ON venues(uuid);
+
 -- Players
 CREATE TABLE players (
 	player_id SERIAL PRIMARY KEY,
+	uuid UUID NOT NULL DEFAULT uuid_generate_v4(),
 	nhl_player_id INTEGER UNIQUE NOT NULL,
 	first_name VARCHAR(100),
 	last_name VARCHAR(100) NOT NULL,
@@ -75,6 +81,7 @@ CREATE TABLE players (
 	player_data JSONB
 );
 
+CREATE UNIQUE INDEX idx_players_uuid ON players(uuid);
 CREATE INDEX idx_players_nhl_id ON players(nhl_player_id);
 CREATE INDEX idx_players_team ON players(current_team_id);
 CREATE INDEX idx_players_name ON players(last_name, first_name);
@@ -84,6 +91,7 @@ CREATE INDEX idx_players_active ON players(active) WHERE active = TRUE;
 -- Event Types Reference
 CREATE TABLE event_types (
 	event_type_id SERIAL PRIMARY KEY,
+	uuid UUID NOT NULL DEFAULT uuid_generate_v4(),
 	event_type VARCHAR(50) UNIQUE NOT NULL,
 	event_category VARCHAR(50),
 	display_name VARCHAR(100),
@@ -94,6 +102,8 @@ CREATE TABLE event_types (
 	created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE UNIQUE INDEX idx_event_types_uuid ON event_types(uuid);
+
 -- ============================================================================
 -- GAME TABLES
 -- ============================================================================
@@ -101,6 +111,7 @@ CREATE TABLE event_types (
 -- Games
 CREATE TABLE games (
 	game_id BIGSERIAL PRIMARY KEY,
+	uuid UUID NOT NULL DEFAULT uuid_generate_v4(),
 	nhl_game_id VARCHAR(50) UNIQUE NOT NULL,
 	season VARCHAR(10) NOT NULL,
 	game_type VARCHAR(20),
@@ -122,6 +133,7 @@ CREATE TABLE games (
 	game_data JSONB
 );
 
+CREATE UNIQUE INDEX idx_games_uuid ON games(uuid);
 CREATE INDEX idx_games_nhl_id ON games(nhl_game_id);
 CREATE INDEX idx_games_date ON games(game_date DESC);
 CREATE INDEX idx_games_status ON games(game_status);
@@ -135,6 +147,7 @@ CREATE INDEX idx_games_season ON games(season);
 -- Crawler Runs
 CREATE TABLE crawler_runs (
 	run_id BIGSERIAL PRIMARY KEY,
+	uuid UUID NOT NULL DEFAULT uuid_generate_v4(),
 	crawler_instance_id VARCHAR(100),
 	crawler_version VARCHAR(20),
 	started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -152,6 +165,7 @@ CREATE TABLE crawler_runs (
 	run_metadata JSONB
 );
 
+CREATE UNIQUE INDEX idx_crawler_uuid ON crawler_runs(uuid);
 CREATE INDEX idx_crawler_game ON crawler_runs(game_id);
 CREATE INDEX idx_crawler_status ON crawler_runs(status, started_at DESC);
 CREATE INDEX idx_crawler_started ON crawler_runs(started_at DESC);
@@ -162,6 +176,7 @@ CREATE INDEX idx_crawler_started ON crawler_runs(started_at DESC);
 
 CREATE TABLE events (
 	event_id BIGSERIAL,
+	uuid UUID NOT NULL DEFAULT uuid_generate_v4(),
 	event_type VARCHAR(50) NOT NULL,
 	event_subtype VARCHAR(50),
 	event_timestamp TIMESTAMPTZ NOT NULL,
@@ -202,6 +217,7 @@ CREATE TABLE events_2025_03 PARTITION OF events
 	FOR VALUES FROM ('2025-03-01') TO ('2025-04-01');
 
 -- Indexes on events (applied to all partitions)
+CREATE UNIQUE INDEX idx_events_uuid ON events(uuid, event_timestamp);
 CREATE INDEX idx_events_game_id ON events(game_id);
 CREATE INDEX idx_events_timestamp ON events(event_timestamp DESC);
 CREATE INDEX idx_events_type ON events(event_type);
@@ -218,7 +234,9 @@ CREATE INDEX idx_events_jsonb ON events USING GIN (event_data);
 -- Event Stream Queue for Data Lake
 CREATE TABLE event_stream_queue (
 	queue_id BIGSERIAL PRIMARY KEY,
+	uuid UUID NOT NULL DEFAULT uuid_generate_v4(),
 	event_id BIGINT NOT NULL,
+	event_uuid UUID NOT NULL,
 	event_timestamp TIMESTAMPTZ NOT NULL,
 	queued_at TIMESTAMPTZ DEFAULT NOW(),
 	streamed_at TIMESTAMPTZ,
@@ -227,8 +245,10 @@ CREATE TABLE event_stream_queue (
 	error_message TEXT
 );
 
+CREATE UNIQUE INDEX idx_stream_queue_uuid ON event_stream_queue(uuid);
 CREATE INDEX idx_stream_queue_status ON event_stream_queue(stream_status, queued_at);
 CREATE INDEX idx_stream_queue_event ON event_stream_queue(event_id, event_timestamp);
+CREATE INDEX idx_stream_queue_event_uuid ON event_stream_queue(event_uuid);
 
 -- ============================================================================
 -- TRIGGERS
@@ -259,8 +279,8 @@ CREATE TRIGGER trigger_games_updated_at
 CREATE OR REPLACE FUNCTION queue_event_for_streaming()
 RETURNS TRIGGER AS $$
 BEGIN
-	INSERT INTO event_stream_queue (event_id, event_timestamp)
-	VALUES (NEW.event_id, NEW.event_timestamp);
+	INSERT INTO event_stream_queue (event_id, event_uuid, event_timestamp)
+	VALUES (NEW.event_id, NEW.uuid, NEW.event_timestamp);
 	RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -294,10 +314,13 @@ CREATE TRIGGER trigger_update_crawler_stats
 CREATE MATERIALIZED VIEW game_summaries AS
 SELECT
 	g.game_id,
+	g.uuid AS game_uuid,
 	g.nhl_game_id,
 	g.game_date,
 	g.game_status,
+	ht.uuid AS home_team_uuid,
 	ht.team_name AS home_team,
+	at.uuid AS away_team_uuid,
 	at.team_name AS away_team,
 	g.home_score,
 	g.away_score,
@@ -310,10 +333,11 @@ FROM games g
 LEFT JOIN teams ht ON g.home_team_id = ht.team_id
 LEFT JOIN teams at ON g.away_team_id = at.team_id
 LEFT JOIN events e ON g.game_id = e.game_id
-GROUP BY g.game_id, g.nhl_game_id, g.game_date, g.game_status,
-         ht.team_name, at.team_name, g.home_score, g.away_score;
+GROUP BY g.game_id, g.uuid, g.nhl_game_id, g.game_date, g.game_status,
+         ht.uuid, ht.team_name, at.uuid, at.team_name, g.home_score, g.away_score;
 
 CREATE UNIQUE INDEX idx_game_summaries_game_id ON game_summaries(game_id);
+CREATE UNIQUE INDEX idx_game_summaries_uuid ON game_summaries(game_uuid);
 
 -- ============================================================================
 -- VIEWS
@@ -323,22 +347,28 @@ CREATE UNIQUE INDEX idx_game_summaries_game_id ON game_summaries(game_id);
 CREATE VIEW events_for_export AS
 SELECT
 	e.event_id,
+	e.uuid AS event_uuid,
 	e.event_type,
 	e.event_subtype,
 	e.event_timestamp,
 	e.captured_at,
 	e.game_time,
 	e.period,
+	g.uuid AS game_uuid,
 	g.nhl_game_id,
 	g.season,
 	g.game_date,
+	t.uuid AS team_uuid,
 	t.team_code,
 	t.team_name,
+	p.uuid AS player_uuid,
 	p.nhl_player_id,
 	p.full_name AS player_name,
 	p.position,
+	p2.uuid AS secondary_player_uuid,
 	p2.nhl_player_id AS secondary_player_nhl_id,
 	p2.full_name AS secondary_player_name,
+	cr.uuid AS crawler_run_uuid,
 	cr.crawler_instance_id,
 	cr.crawler_version,
 	cr.started_at AS crawler_run_started,
@@ -412,4 +442,9 @@ COMMENT ON TABLE crawler_runs IS 'Tracks individual crawler execution runs';
 COMMENT ON TABLE event_stream_queue IS 'Queue for streaming events to data lake';
 COMMENT ON COLUMN events.event_data IS 'Complete event payload in JSONB format for flexibility';
 COMMENT ON COLUMN events.is_processed IS 'Flag indicating if event has been streamed to data lake';
+COMMENT ON COLUMN events.uuid IS 'Unique external reference identifier for cross-system linking';
+COMMENT ON COLUMN games.uuid IS 'Unique external reference identifier for cross-system linking';
+COMMENT ON COLUMN players.uuid IS 'Unique external reference identifier for cross-system linking';
+COMMENT ON COLUMN teams.uuid IS 'Unique external reference identifier for cross-system linking';
+COMMENT ON COLUMN crawler_runs.uuid IS 'Unique external reference identifier for cross-system linking';
 

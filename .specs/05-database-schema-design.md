@@ -28,12 +28,13 @@ NHL Gamecenter Page
 
 ### Key Design Principles
 
-1. **Immutable Events**: Each event is never modified, only inserted
-2. **Time-Series Data**: Every event has a precise timestamp
-3. **Crawler Traceability**: Each event references the crawler that captured it
-4. **Normalization**: Reference data (teams, players, games) stored separately
-5. **Streaming Ready**: Schema optimized for streaming to data lakes
-6. **Analytics Friendly**: Denormalized views for quick analytics
+1. **UUID External References**: Every entity has a UUID for external identification
+2. **Immutable Events**: Each event is never modified, only inserted
+3. **Time-Series Data**: Every event has a precise timestamp
+4. **Crawler Traceability**: Each event references the crawler that captured it
+5. **Normalization**: Reference data (teams, players, games) stored separately
+6. **Streaming Ready**: Schema optimized for streaming to data lakes
+7. **Analytics Friendly**: Denormalized views for quick analytics
 
 ## Core Schema Design
 
@@ -43,7 +44,8 @@ The central table that logs every event captured from NHL pages.
 ```sql
 CREATE TABLE events (
 	event_id BIGSERIAL PRIMARY KEY,
-
+	uuid UUID NOT NULL DEFAULT uuid_generate_v4(),  -- Unique external reference
+	
 	-- Event Classification
 	event_type VARCHAR(50) NOT NULL,  -- 'goal', 'penalty', 'shot', 'faceoff', 'hit', etc.
 	event_subtype VARCHAR(50),        -- Specific details like 'power_play_goal', 'wrist_shot'

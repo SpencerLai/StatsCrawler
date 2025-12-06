@@ -2,12 +2,62 @@
 -- Common analytics and operational queries
 
 -- ============================================================================
+-- UUID LOOKUPS (External API Usage)
+-- ============================================================================
+
+-- 1. Get entity by UUID (API pattern)
+SELECT * FROM games WHERE uuid = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+SELECT * FROM players WHERE uuid = 'b1ffcd00-0d1c-5fg9-cc7e-7cc0ce491b22';
+SELECT * FROM teams WHERE uuid = 'c2ggde11-1e2d-6gh0-dd8f-8dd1df5a2c33';
+SELECT * FROM events WHERE uuid = 'd3hhef22-2f3e-7hi1-ee9g-9ee2eg6b3d44';
+
+-- 2. Get game with team UUIDs for API response
+SELECT 
+	g.uuid AS game_uuid,
+	g.nhl_game_id,
+	g.game_date,
+	g.game_status,
+	ht.uuid AS home_team_uuid,
+	ht.team_name AS home_team,
+	at.uuid AS away_team_uuid,
+	at.team_name AS away_team,
+	g.home_score,
+	g.away_score
+FROM games g
+JOIN teams ht ON g.home_team_id = ht.team_id
+JOIN teams at ON g.away_team_id = at.team_id
+WHERE g.uuid = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+
+-- ============================================================================
 -- GAME ANALYTICS
 -- ============================================================================
 
--- 1. Get all events for a specific game
-SELECT
+-- 3. Get all events for a specific game (by UUID)
+SELECT 
+	e.uuid AS event_uuid,
 	e.event_id,
+	e.event_type,
+	e.event_timestamp,
+	e.game_time,
+	e.period,
+	p.uuid AS player_uuid,
+	p.full_name AS player_name,
+	t.uuid AS team_uuid,
+	t.team_name,
+	e.home_score,
+	e.away_score,
+	e.event_data
+FROM events e
+LEFT JOIN players p ON e.player_id = p.player_id
+LEFT JOIN teams t ON e.team_id = t.team_id
+JOIN games g ON e.game_id = g.game_id
+WHERE g.uuid = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'
+ORDER BY e.event_timestamp;
+
+-- 4. Get all events for a specific game (by internal ID)
+SELECT 
+	e.event_id,
+	e.uuid AS event_uuid,
 	e.event_type,
 	e.event_timestamp,
 	e.game_time,

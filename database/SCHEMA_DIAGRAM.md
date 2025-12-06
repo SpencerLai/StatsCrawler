@@ -8,6 +8,7 @@
 │ (Dimension)     │
 │                 │
 │ • venue_id (PK) │
+│ • uuid (UNIQUE) │
 │ • venue_name    │
 │ • city          │
 └────────┬────────┘
@@ -18,6 +19,7 @@
 │ (Dimension)     │◄───────►│ (Dimension)     │
 │                 │         │                 │
 │ • game_id (PK)  │         │ • team_id (PK)  │
+│ • uuid (UNIQUE) │         │ • uuid (UNIQUE) │
 │ • nhl_game_id   │         │ • nhl_team_id   │
 │ • season        │         │ • team_code     │
 │ • game_status   │         │ • team_name     │
@@ -31,6 +33,7 @@
          │                  │ (Dimension)     │
          │                  │                 │
          │                  │ • player_id (PK)│
+         │                  │ • uuid (UNIQUE) │
          │                  │ • nhl_player_id │
          │                  │ • full_name     │
          │                  │ • position      │
@@ -43,6 +46,7 @@
 │              (Operational Tracking)                    │
 │                                                        │
 │ • run_id (PK)                                         │
+│ • uuid (UNIQUE)                                       │
 │ • crawler_instance_id                                 │
 │ • game_id (FK)                                        │
 │ • status (RUNNING, SUCCESS, FAILED)                   │
@@ -56,6 +60,7 @@
 │              ⚡ TIME-SERIES PARTITIONED                 │
 │                                                         │
 │ • event_id (PK)                                        │
+│ • uuid (UNIQUE)                                        │
 │ • event_type (goal, shot, penalty, etc.)              │
 │ • event_timestamp (partition key)                     │
 │ • captured_at                                         │
@@ -74,7 +79,9 @@
 │           (Data Lake Streaming)                        │
 │                                                         │
 │ • queue_id (PK)                                        │
+│ • uuid (UNIQUE)                                        │
 │ • event_id (FK)                                        │
+│ • event_uuid (FK)                                      │
 │ • stream_status (PENDING, STREAMING, COMPLETED)       │
 │ • queued_at                                           │
 │ • streamed_at                                         │
@@ -278,7 +285,17 @@ events (Parent Table)
 
 ## Key Design Decisions
 
-### 1. Event Immutability
+### 1. UUID External References
+- Every entity has a **UUID field** for external references
+- Auto-generated using `uuid_generate_v4()`
+- Used for:
+  - API endpoints (never expose internal IDs)
+  - Data lake cross-references
+  - Cross-system synchronization
+  - External integrations
+- Internal operations still use integer PKs for performance
+
+### 2. Event Immutability
 - Events are **never updated**, only inserted
 - Historical accuracy preserved
 - Simplifies replication and streaming
